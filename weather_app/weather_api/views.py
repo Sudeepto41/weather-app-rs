@@ -18,9 +18,14 @@ def index(request):
     weather_resp = get_weather(lat, long)
     air_resp = get_air_quality(lat, long)
     
-    print(weather_resp)
-    print(air_resp)
-    
+    aqi_index_measures = {
+        "1": "Good",
+        "2": "Fair",
+        "3": "Moderate",
+        "4": "Poor",
+        "5": "Very Poor"
+    }
+
     data = {
         "current_weather": {
             "city": str(city),
@@ -28,10 +33,11 @@ def index(request):
             "humidity": weather_resp['current']['relative_humidity_2m'],
             "wind_speed": weather_resp['current']['wind_speed_10m'],
             "precipitation": weather_resp['current']['precipitation'],
-            "is_day": weather_resp['current']['is_day']
+            "is_day": "Day" if weather_resp['current']['is_day'] else  "Night"
         },    
         "air_quality": {
             'aqi': air_resp['list'][0]['main']['aqi'],
+            'aqi_measure': aqi_index_measures[str(air_resp['list'][0]['main']['aqi'])],
             'co': air_resp['list'][0]['components']['co'],
             'no': air_resp['list'][0]['components']['no'],
             'no2': air_resp['list'][0]['components']['no2'],
@@ -40,7 +46,42 @@ def index(request):
             'pm2_5': air_resp['list'][0]['components']['pm2_5'], 
             'pm10': air_resp['list'][0]['components']['pm10'], 
             'nh3': air_resp['list'][0]['components']['nh3'],
-        }
+        },
+        "past": [
+            {
+                'date': weather_resp['daily']['time'][0],
+                'temp_max': weather_resp['daily']['temperature_2m_max'][0],
+                'temp_min': weather_resp['daily']['temperature_2m_min'][0],
+            },
+            {
+                'date': weather_resp['daily']['time'][1],
+                'temp_max': weather_resp['daily']['temperature_2m_max'][1],
+                'temp_min': weather_resp['daily']['temperature_2m_min'][1],
+            },
+            {
+                'date': weather_resp['daily']['time'][2],
+                'temp_max': weather_resp['daily']['temperature_2m_max'][2],
+                'temp_min': weather_resp['daily']['temperature_2m_min'][2],
+            },
+            
+        ],
+        "future": [
+            {
+                'date': weather_resp['daily']['time'][4],
+                'temp_max': weather_resp['daily']['temperature_2m_max'][4],
+                'temp_min': weather_resp['daily']['temperature_2m_min'][4],
+            },
+            {
+                'date': weather_resp['daily']['time'][5],
+                'temp_max': weather_resp['daily']['temperature_2m_max'][5],
+                'temp_min': weather_resp['daily']['temperature_2m_min'][5],
+            },
+            {
+                'date': weather_resp['daily']['time'][6],
+                'temp_max': weather_resp['daily']['temperature_2m_max'][6],
+                'temp_min': weather_resp['daily']['temperature_2m_min'][6],
+            },
+        ]
     }
 
     return HttpResponse(json.dumps( data ))
@@ -54,31 +95,26 @@ def get_weather(lat:str, long: str) -> dict:
     params = {
 	    "latitude": lat,
 	    "longitude": long,
+        "timezone": "auto",
+        "past_days": 3,
+        "forecast_days": 4,
 	    "current": [
             "temperature_2m", 
             "relative_humidity_2m", 
             "is_day", 
             "precipitation", 
             "wind_speed_10m"
-        ]
+        ],
+        "daily": [
+            "temperature_2m_max", 
+            "temperature_2m_min"
+        ],
     }
     response = requests.get(weather_base_url, params=params).json()
+    print(response)
     return response
 
 def get_air_quality(lat: str, long: str) -> dict:
     air_url = air_base_url.format(lat, long, API_KEY)
     response = requests.get(air_url).json()
     return response
-
-def get_status(measure_name:str, measure: int) -> str:
-    permissable_limit = {
-        'aqi': 0,
-        'co': 0,
-        'no': 0,
-        'no2': 0,
-        'o3': 0, 
-        'so2': 0, 
-        'pm2_5': 0, 
-        'pm10': 0, 
-        'nh3': 0,
-    }
