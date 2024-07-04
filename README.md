@@ -1,4 +1,4 @@
-# weather-app-rsa
+# weather-app-rs
 
 ## Pre - Requisites
 1. python 3.12
